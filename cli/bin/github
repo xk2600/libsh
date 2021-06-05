@@ -1,0 +1,14 @@
+#!/bin/sh
+
+. ${CLIROOT}/cli.subr
+
+CMDROOT="$LIBROOT/$0"
+
+SYNTAXLIST=`COMMANDS`
+
+USAGE() { 
+  echo '$0 create'
+}
+
+
+

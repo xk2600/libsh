@@ -1,0 +1,19 @@
+#/bin/sh
+
+# synatax: github repo create [reponame] [targetdir]
+# 
+#     gets git creds from ~/.git-credentials and makes a rest call against the 
+#     github api to create a new repository, initializes it, adds the current
+#     directory to it, and pushes it to the repo.
+
+CURRDIR=`pwd`
+
+if [ ! $# -eq 0 ]; then
+  print "usage: ... $0 reponame"
+fi
+
+REPONAME=$1
+
+grep -E '@github.com$' ~/.git-credentials | grep -oE '(://)[^@]+' | cut -b 4- \
+  | curl --url 'https://api.github.com/user/repos' -d '{"name":"$REPONAME"}' -K-
+
