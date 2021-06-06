@@ -535,7 +535,10 @@ ansi() {
   fi
 }
 
-
+# IMPLEMENTATION CALLED FROM ./bin/ansi 
+if [ `basename $0` == 'ansi' ]; then
+  ansi "$@"
+fi
 
 
 
