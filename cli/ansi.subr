@@ -1,0 +1,645 @@
+#/bin/sh
+
+# NAMESPACE
+# 
+#       ansi - virtual-terminal control
+#
+# COMMANDS
+# 
+#       ansi import
+#       ansi import [vars|FG|BG|RGB|palette|swatch|all]
+#
+#             import functions into global namespace
+#
+#       ansi reset
+#
+#             reset terminal colors
+#
+#       ansi layer colorname
+#
+#             set foreground or background color
+#
+#       ansi swatch colorname
+#
+#             select a swatch from the 256-color palette by name
+#
+#       ansi palette
+#
+#             dump the palette names
+#
+#       ansi RGB LAYER [c]
+#       ansi RGB LAYER [r] [g] [b]
+#
+#
+# ARGUMENTS
+#
+#       layer          FG for foreground or BG for background
+#       colorname      3-bit or 256-bit colorname
+#       r              8-bit red component
+#       g              8-bit green component
+#       b              8-bit blue component
+#
+# EXPORTS
+#
+#       $ESC           escape character
+#       $SGR           select graphic rendition
+#       $RST           reset SGR (color) flags
+#
+#   if 'ansi import vars' is called, the following variables
+#   are exported as well:
+#
+#       $BLK, $RED, $GRN, $YEL, $BLU, $MAG, $CYN, $WHT
+#
+
+# CONTROL CODES
+ESC=''
+SGR="${ESC}["
+RST="${SGR}0m"
+
+ansi::import() {
+  USAGE=`printf '%s\n%s\n\n' \
+     'usage: [ansi] import'    \
+     'usage: [ansi] import [vars|FG|BG|RGB|palette|swatch|all]'`
+
+  if [ $# -eq 0 ] || [ "$1" == all ] ; then
+     ansi::import    vars   FG BG RGB   palette swatch
+  fi
+  while [ $# -gt 0 ]; do
+    case $1 in 
+      vars) 
+        BOLD="${SGR}1m"
+        
+        # COLORS
+        BLK="${SGR}30m"
+        RED="${SGR}31m"
+        GRN="${SGR}32m"
+        YEL="${SGR}33m"
+        BLU="${SGR}34m"
+        MAG="${SGR}35m"
+        CYN="${SGR}36m"
+        WHT="${SGR}37m" ;;
+
+      FG)          alias FG='ansi::FG'             ;;
+      BG)          alias BG='ansi::BG'             ;;
+      RGB)         alias RGB='ansi::RGB'           ;;
+      palette)     alias palette='ansi::palette'   ;;
+      swatch)      alias swatch='ansi::swatch'     ;;
+
+      \*)    ansi::import all;;
+      all)   ansi::import;;
+
+      *)
+    esac
+    shift
+  done
+}
+
+ansi::reset() {
+  local USAGE="usage: [ansi] reset"
+  printf "${SGR}0m"
+}
+
+ansi::FG() {
+  local USAGE="usage: [ansi] FG [BLK|RED|GRN|YEL|BLU|MAG|CYN|WHT]"
+  [ ! $# -eq 1 ] && echo "$USAGE"
+  case $1 in
+    BLK)   printf "${SGR}30m" ;;
+    RED)   printf "${SGR}31m" ;;
+    GRN)   printf "${SGR}32m" ;;
+    YEL)   printf "${SGR}33m" ;;
+    BLU)   printf "${SGR}34m" ;;
+    MAG)   printf "${SGR}35m" ;;
+    CYN)   printf "${SGR}36m" ;;
+    WHT)   printf "${SGR}37m" ;;
+  esac
+}
+
+# BACKGROUND FUNCTION
+ansi::BG() {
+  local USAGE="usage: [ansi] BG [BLK|RED|GRN|YEL|BLU|MAG|CYN|WHT]"
+  [ ! $# -eq 1 ] && echo "$USAGE"
+  case $1 in
+    BLK)   printf "${SGR}40m" ;;
+    RED)   printf "${SGR}41m" ;;
+    GRN)   printf "${SGR}42m" ;;
+    YEL)   printf "${SGR}43m" ;;
+    BLU)   printf "${SGR}44m" ;;
+    MAG)   printf "${SGR}45m" ;;
+    CYN)   printf "${SGR}46m" ;;
+    WHT)   printf "${SGR}47m" ;;
+  esac
+}
+
+ansi::palette() {
+  cat <<\END
+  Black            Maroon             Green            Olive
+  Navy             Purple             Teal             Silver
+  Grey             Red                Lime             Yellow
+  Blue             Fuchsia            Aqua             White
+  Grey0            NavyBlue           DarkBlue         Blue3
+  Blue3            Blue1              DarkGreen        DeepSkyBlue4
+  DeepSkyBlue4     DeepSkyBlue4       DodgerBlue3      DodgerBlue2
+  Green4           SpringGreen4       Turquoise4       DeepSkyBlue3
+  DeepSkyBlue3     DodgerBlue1        Green3           SpringGreen3
+  DarkCyan         LightSeaGreen      DeepSkyBlue2     DeepSkyBlue1
+  Green3           SpringGreen3       SpringGreen2     Cyan3
+  DarkTurquoise    Turquoise2         Green1           SpringGreen2
+  SpringGreen1     MediumSpringGreen  Cyan2            Cyan1
+  DarkRed          DeepPink4          Purple4          Purple4
+  Purple3          BlueViolet         Orange4          Grey37
+  MediumPurple4    SlateBlue3         SlateBlue3       RoyalBlue1
+  Chartreuse4      DarkSeaGreen4      PaleTurquoise4   SteelBlue
+  SteelBlue3       CornflowerBlue     Chartreuse3      DarkSeaGreen4
+  CadetBlue        CadetBlue          SkyBlue3         SteelBlue1
+  Chartreuse3      PaleGreen3         SeaGreen3        Aquamarine3
+  MediumTurquoise  SteelBlue1         Chartreuse2      SeaGreen2
+  SeaGreen1        SeaGreen1          Aquamarine1      DarkSlateGray2
+  DarkRed          DeepPink4          DarkMagenta      DarkMagenta
+  DarkViolet       Purple             Orange4          LightPink4
+  Plum4            MediumPurple3      MediumPurple3    SlateBlue1
+  Yellow4          Wheat4             Grey53           LightSlateGrey
+  MediumPurple     LightSlateBlue     Yellow4          DarkOliveGreen3
+  DarkSeaGreen     LightSkyBlue3      LightSkyBlue3    SkyBlue2
+  Chartreuse2      DarkOliveGreen3    PaleGreen3       DarkSeaGreen3
+  DarkSlateGray3   SkyBlue1           Chartreuse1      LightGreen
+  LightGreen       PaleGreen1         Aquamarine1      DarkSlateGray1
+  Red3             DeepPink4          MediumVioletRed  Magenta3
+  DarkViolet       Purple             DarkOrange3      IndianRed
+  HotPink3         MediumOrchid3      MediumOrchid     MediumPurple2
+  DarkGoldenrod    LightSalmon3       RosyBrown        Grey63
+  MediumPurple2    MediumPurple1      Gold3            DarkKhaki
+  NavajoWhite3     Grey69             LightSteelBlue3  LightSteelBlue
+  Yellow3          DarkOliveGreen3    DarkSeaGreen3    DarkSeaGreen2
+  LightCyan3       LightSkyBlue1      GreenYellow      DarkOliveGreen2
+  PaleGreen1       DarkSeaGreen2      DarkSeaGreen1    PaleTurquoise1
+  Red3             DeepPink3          DeepPink3        Magenta3
+  Magenta3         Magenta2           DarkOrange3      IndianRed
+  HotPink3         HotPink2           Orchid           MediumOrchid1
+  Orange3          LightSalmon3       LightPink3       Pink3
+  Plum3            Violet             Gold3            LightGoldenrod3
+  Tan              MistyRose3         Thistle3         Plum2
+  Yellow3          Khaki3             LightGoldenrod2  LightYellow3
+  Grey84           LightSteelBlue1    Yellow2          DarkOliveGreen1
+  DarkOliveGreen1  DarkSeaGreen1      Honeydew2        LightCyan1
+  Red1             DeepPink2          DeepPink1        DeepPink1
+  Magenta2         Magenta1           OrangeRed1       IndianRed1
+  IndianRed1       HotPink            HotPink          MediumOrchid1
+  DarkOrange       Salmon1            LightCoral       PaleVioletRed1
+  Orchid2          Orchid1            Orange1          SandyBrown
+  LightSalmon1     LightPink1         Pink1            Plum1
+  Gold1            LightGoldenrod2    LightGoldenrod2  NavajoWhite1
+  MistyRose1       Thistle1           Yellow1          LightGoldenrod1
+  Khaki1           Wheat1             Cornsilk1        Grey100
+  Grey3            Grey7              Grey11           Grey15
+  Grey19           Grey23             Grey27           Grey30
+  Grey35           Grey39             Grey42           Grey46
+  Grey50           Grey54             Grey58           Grey62
+  Grey66           Grey70             Grey74           Grey78
+  Grey82           Grey85             Grey89           Grey93
+END
+}
+
+ansi::swatch() {
+  # black can not be returned, must check for black in caller,
+  # as 0 is reserved for error function
+
+  local USAGE="usage: [ansi] swatch COLORNAME"
+  if [ ! $# -eq 1 ]; then
+    printf "%s: ansi::swatch: must provide COLORNAME.\n%s\n\n" "$0" "$USAGE" >&2
+    return 0
+  fi
+  case $1 in 
+    Black)              echo 0 ;;
+    Maroon)             echo 1 ;;
+    Green)              echo 2 ;;
+    Olive)              echo 3 ;;
+    Navy)               echo 4 ;;
+    Purple)             echo 5 ;;
+    Teal)               echo 6 ;;
+    Silver)             echo 7 ;;
+    Grey)               echo 8 ;;
+    Red)                echo 9 ;;
+    Lime)               echo 10 ;;
+    Yellow)             echo 11 ;;
+    Blue)               echo 12 ;;
+    Fuchsia)            echo 13 ;;
+    Aqua)               echo 14 ;;
+    White)              echo 15 ;;
+    Grey0)              echo 16 ;;
+    NavyBlue)           echo 17 ;;
+    DarkBlue)           echo 18 ;;
+    Blue3)              echo 19 ;;
+    Blue3)              echo 20 ;;
+    Blue1)              echo 21 ;;
+    DarkGreen)          echo 22 ;;
+    DeepSkyBlue4)       echo 23 ;;
+    DeepSkyBlue4)       echo 24 ;;
+    DeepSkyBlue4)       echo 25 ;;
+    DodgerBlue3)        echo 26 ;;
+    DodgerBlue2)        echo 27 ;;
+    Green4)             echo 28 ;;
+    SpringGreen4)       echo 29 ;;
+    Turquoise4)         echo 30 ;;
+    DeepSkyBlue3)       echo 31 ;;
+    DeepSkyBlue3)       echo 32 ;;
+    DodgerBlue1)        echo 33 ;;
+    Green3)             echo 34 ;;
+    SpringGreen3)       echo 35 ;;
+    DarkCyan)           echo 36 ;;
+    LightSeaGreen)      echo 37 ;;
+    DeepSkyBlue2)       echo 38 ;;
+    DeepSkyBlue1)       echo 39 ;;
+    Green3)             echo 40 ;;
+    SpringGreen3)       echo 41 ;;
+    SpringGreen2)       echo 42 ;;
+    Cyan3)              echo 43 ;;
+    DarkTurquoise)      echo 44 ;;
+    Turquoise2)         echo 45 ;;
+    Green1)             echo 46 ;;
+    SpringGreen2)       echo 47 ;;
+    SpringGreen1)       echo 48 ;;
+    MediumSpringGreen)  echo 49 ;;
+    Cyan2)              echo 50 ;;
+    Cyan1)              echo 51 ;;
+    DarkRed)            echo 52 ;;
+    DeepPink4)          echo 53 ;;
+    Purple4)            echo 54 ;;
+    Purple4)            echo 55 ;;
+    Purple3)            echo 56 ;;
+    BlueViolet)         echo 57 ;;
+    Orange4)            echo 58 ;;
+    Grey37)             echo 59 ;;
+    MediumPurple4)      echo 60 ;;
+    SlateBlue3)         echo 61 ;;
+    SlateBlue3)         echo 62 ;;
+    RoyalBlue1)         echo 63 ;;
+    Chartreuse4)        echo 64 ;;
+    DarkSeaGreen4)      echo 65 ;;
+    PaleTurquoise4)     echo 66 ;;
+    SteelBlue)          echo 67 ;;
+    SteelBlue3)         echo 68 ;;
+    CornflowerBlue)     echo 69 ;;
+    Chartreuse3)        echo 70 ;;
+    DarkSeaGreen4)      echo 71 ;;
+    CadetBlue)          echo 72 ;;
+    CadetBlue)          echo 73 ;;
+    SkyBlue3)           echo 74 ;;
+    SteelBlue1)         echo 75 ;;
+    Chartreuse3)        echo 76 ;;
+    PaleGreen3)         echo 77 ;;
+    SeaGreen3)          echo 78 ;;
+    Aquamarine3)        echo 79 ;;
+    MediumTurquoise)    echo 80 ;;
+    SteelBlue1)         echo 81 ;;
+    Chartreuse2)        echo 82 ;;
+    SeaGreen2)          echo 83 ;;
+    SeaGreen1)          echo 84 ;;
+    SeaGreen1)          echo 85 ;;
+    Aquamarine1)        echo 86 ;;
+    DarkSlateGray2)     echo 87 ;;
+    DarkRed)            echo 88 ;;
+    DeepPink4)          echo 89 ;;
+    DarkMagenta)        echo 90 ;;
+    DarkMagenta)        echo 91 ;;
+    DarkViolet)         echo 92 ;;
+    Purple)             echo 93 ;;
+    Orange4)            echo 94 ;;
+    LightPink4)         echo 95 ;;
+    Plum4)              echo 96 ;;
+    MediumPurple3)      echo 97 ;;
+    MediumPurple3)      echo 98 ;;
+    SlateBlue1)         echo 99 ;;
+    Yellow4)            echo 100 ;;
+    Wheat4)             echo 101 ;;
+    Grey53)             echo 102 ;;
+    LightSlateGrey)     echo 103 ;;
+    MediumPurple)       echo 104 ;;
+    LightSlateBlue)     echo 105 ;;
+    Yellow4)            echo 106 ;;
+    DarkOliveGreen3)    echo 107 ;;
+    DarkSeaGreen)       echo 108 ;;
+    LightSkyBlue3)      echo 109 ;;
+    LightSkyBlue3)      echo 110 ;;
+    SkyBlue2)           echo 111 ;;
+    Chartreuse2)        echo 112 ;;
+    DarkOliveGreen3)    echo 113 ;;
+    PaleGreen3)         echo 114 ;;
+    DarkSeaGreen3)      echo 115 ;;
+    DarkSlateGray3)     echo 116 ;;
+    SkyBlue1)           echo 117 ;;
+    Chartreuse1)        echo 118 ;;
+    LightGreen)         echo 119 ;;
+    LightGreen)         echo 120 ;;
+    PaleGreen1)         echo 121 ;;
+    Aquamarine1)        echo 122 ;;
+    DarkSlateGray1)     echo 123 ;;
+    Red3)               echo 124 ;;
+    DeepPink4)          echo 125 ;;
+    MediumVioletRed)    echo 126 ;;
+    Magenta3)           echo 127 ;;
+    DarkViolet)         echo 128 ;;
+    Purple)             echo 129 ;;
+    DarkOrange3)        echo 130 ;;
+    IndianRed)          echo 131 ;;
+    HotPink3)           echo 132 ;;
+    MediumOrchid3)      echo 133 ;;
+    MediumOrchid)       echo 134 ;;
+    MediumPurple2)      echo 135 ;;
+    DarkGoldenrod)      echo 136 ;;
+    LightSalmon3)       echo 137 ;;
+    RosyBrown)          echo 138 ;;
+    Grey63)             echo 139 ;;
+    MediumPurple2)      echo 140 ;;
+    MediumPurple1)      echo 141 ;;
+    Gold3)              echo 142 ;;
+    DarkKhaki)          echo 143 ;;
+    NavajoWhite3)       echo 144 ;;
+    Grey69)             echo 145 ;;
+    LightSteelBlue3)    echo 146 ;;
+    LightSteelBlue)     echo 147 ;;
+    Yellow3)            echo 148 ;;
+    DarkOliveGreen3)    echo 149 ;;
+    DarkSeaGreen3)      echo 150 ;;
+    DarkSeaGreen2)      echo 151 ;;
+    LightCyan3)         echo 152 ;;
+    LightSkyBlue1)      echo 153 ;;
+    GreenYellow)        echo 154 ;;
+    DarkOliveGreen2)    echo 155 ;;
+    PaleGreen1)         echo 156 ;;
+    DarkSeaGreen2)      echo 157 ;;
+    DarkSeaGreen1)      echo 158 ;;
+    PaleTurquoise1)     echo 159 ;;
+    Red3)               echo 160 ;;
+    DeepPink3)          echo 161 ;;
+    DeepPink3)          echo 162 ;;
+    Magenta3)           echo 163 ;;
+    Magenta3)           echo 164 ;;
+    Magenta2)           echo 165 ;;
+    DarkOrange3)        echo 166 ;;
+    IndianRed)          echo 167 ;;
+    HotPink3)           echo 168 ;;
+    HotPink2)           echo 169 ;;
+    Orchid)             echo 170 ;;
+    MediumOrchid1)      echo 171 ;;
+    Orange3)            echo 172 ;;
+    LightSalmon3)       echo 173 ;;
+    LightPink3)         echo 174 ;;
+    Pink3)              echo 175 ;;
+    Plum3)              echo 176 ;;
+    Violet)             echo 177 ;;
+    Gold3)              echo 178 ;;
+    LightGoldenrod3)    echo 179 ;;
+    Tan)                echo 180 ;;
+    MistyRose3)         echo 181 ;;
+    Thistle3)           echo 182 ;;
+    Plum2)              echo 183 ;;
+    Yellow3)            echo 184 ;;
+    Khaki3)             echo 185 ;;
+    LightGoldenrod2)    echo 186 ;;
+    LightYellow3)       echo 187 ;;
+    Grey84)             echo 188 ;;
+    LightSteelBlue1)    echo 189 ;;
+    Yellow2)            echo 190 ;;
+    DarkOliveGreen1)    echo 191 ;;
+    DarkOliveGreen1)    echo 192 ;;
+    DarkSeaGreen1)      echo 193 ;;
+    Honeydew2)          echo 194 ;;
+    LightCyan1)         echo 195 ;;
+    Red1)               echo 196 ;;
+    DeepPink2)          echo 197 ;;
+    DeepPink1)          echo 198 ;;
+    DeepPink1)          echo 199 ;;
+    Magenta2)           echo 200 ;;
+    Magenta1)           echo 201 ;;
+    OrangeRed1)         echo 202 ;;
+    IndianRed1)         echo 203 ;;
+    IndianRed1)         echo 204 ;;
+    HotPink)            echo 205 ;;
+    HotPink)            echo 206 ;;
+    MediumOrchid1)      echo 207 ;;
+    DarkOrange)         echo 208 ;;
+    Salmon1)            echo 209 ;;
+    LightCoral)         echo 210 ;;
+    PaleVioletRed1)     echo 211 ;;
+    Orchid2)            echo 212 ;;
+    Orchid1)            echo 213 ;;
+    Orange1)            echo 214 ;;
+    SandyBrown)         echo 215 ;;
+    LightSalmon1)       echo 216 ;;
+    LightPink1)         echo 217 ;;
+    Pink1)              echo 218 ;;
+    Plum1)              echo 219 ;;
+    Gold1)              echo 220 ;;
+    LightGoldenrod2)    echo 221 ;;
+    LightGoldenrod2)    echo 222 ;;
+    NavajoWhite1)       echo 223 ;;
+    MistyRose1)         echo 224 ;;
+    Thistle1)           echo 225 ;;
+    Yellow1)            echo 226 ;;
+    LightGoldenrod1)    echo 227 ;;
+    Khaki1)             echo 228 ;;
+    Wheat1)             echo 229 ;;
+    Cornsilk1)          echo 230 ;;
+    Grey100)            echo 231 ;;
+    Grey3)              echo 232 ;;
+    Grey7)              echo 233 ;;
+    Grey11)             echo 234 ;;
+    Grey15)             echo 235 ;;
+    Grey19)             echo 236 ;;
+    Grey23)             echo 237 ;;
+    Grey27)             echo 238 ;;
+    Grey30)             echo 239 ;;
+    Grey35)             echo 240 ;;
+    Grey39)             echo 241 ;;
+    Grey42)             echo 242 ;;
+    Grey46)             echo 243 ;;
+    Grey50)             echo 244 ;;
+    Grey54)             echo 245 ;;
+    Grey58)             echo 246 ;;
+    Grey62)             echo 247 ;;
+    Grey66)             echo 248 ;;
+    Grey70)             echo 249 ;;
+    Grey74)             echo 250 ;;
+    Grey78)             echo 251 ;;
+    Grey82)             echo 252 ;;
+    Grey85)             echo 253 ;;
+    Grey89)             echo 254 ;;
+    Grey93)             echo 255 ;;
+    *)
+        printf '%s: RGB::PICKER: unknown color "%s"\n%s\n\n' "$0" "$1" "$USAGE" >&2
+        ansi::palette
+        return 0
+    ;;
+  esac
+}
+
+ansi::RGB() {
+  local USAGE
+  local RGB_ERR
+  local COLORCHART
+
+  RGB_ERR="unknown color name in RGB argument"
+
+  USAGE=`printf '%s\n%s\n%s\n'            \
+    'usage: [ansi] RGB [fg|bg] [c]'         \
+    'usage: [ansi] RGB [fg|bg] [r] [g] [b]' \
+    '   c: named index,   r, b, g: 24-bit RGB components'`
+
+  if [ ! $# -eq 2 ] && [ ! $# -eq 4 ] ; then
+    printf "$USAGE"
+    return 1
+  fi
+
+  case $1 in
+       fg)  LAYER=38 ;;
+       bg)  LAYER=48 ;;
+        *)  printf "$USAGE" >&2 ; return 1 ;; 
+  esac
+
+
+  if [ $# -eq 2 ]; then
+     # RGB [fg|bg] [c]
+     local c
+     c=`ansi::swatch $2`
+
+     printf "${SGR}%s;5;%sm" "${LAYER}" "${c:?${RGB_ERR}\n}"
+  fi
+
+  if [ $# -eq 4 ]; then
+     # RGB [fg|bg] [r] [g] [b]
+     local r
+     local g
+     local b
+     r=$2
+     g=$3
+     b=$4
+
+     printf "${SGR}%s;2;%s;%s;%sm" \
+        "${LAYER}"                  \
+        "${r:?$0: r: ${RGB_ERR}}"   \
+        "${g:?$0: g: ${RGB_ERR}}"   \
+        "${b:?$0: b: ${RGB_ERR}}"
+  fi
+}
+
+ansi() {
+  local COMMAND="$1"
+  local CMD_ERR="$0: ansi: unknown subcommand '$COMMAND' must be: \"import, FG, BG, RGB, palette, swatch\"."
+  COMMAND=${COMMAND:?$CMD_ERR}
+  # NOTE: Add validator to check for existance of a function.
+  shift
+  if [ ! -z `command -v "ansi::$COMMAND"` ]; then
+    ansi::$COMMAND "$@" 
+  else
+    printf "\n%s\n" "$CMD_ERR"
+  fi
+}
+
+
+
+
+
+# RUN TEST CASES WHEN EXECUTED DIRECTLY AS OPPOSED TO SOURCING.
+if [ `basename $0` == 'ansi.subr' ]; then
+
+  {
+    namespace_test() {
+      echo   '#### Namespace Control'
+      echo   '# '
+      echo   '# usage: [ansi] import'
+      echo   '# usage: [ansi] import [vars|FG|BG|RGB|palette|swatch|all]'
+      echo   '# '
+      printf '# ansi::import vars: %s\n' \
+               `ansi::import vars && echo OK || echo FAIL`
+      printf '# ansi::import all: %s\n'  \
+               `ansi::import all  && echo OK || echo FAIL`
+    }
+
+    sample() {
+      local LAYER="$1" ; LAYER="${LAYER:?}"
+      local C="$2" ; C="${C:?}"
+      local G="$3"
+      local B="$4"
+      case "$LAYER" in
+            FG)  printf "${RST}%s${C}${RST}" `ansi::FG "${C}"` ;;
+            BG)  printf "${RST}%s${C}${RST}" `ansi::BG "${C}"` ;;
+            RGB) [ $# == 2 ] \
+                    && printf "${RST}%sX${RST}" `ansi::RGB fg "${C:?}"` \
+                    || printf "${RST}%sX${RST}" `ansi::RGB fg "${C:?}" ${G:?} ${B:?}`;;
+            *)  return 1 ;;
+      esac
+    }
+
+    palette_3b_test() {
+      echo   '#### 3-bit Palette'
+      echo   '# '
+      echo   '# usage: [ansi] FG [BLK|RED|GRN|YEL|BLU|MAG|CYN|WHT]'
+      echo   '# usage: [ansi] BG [BLK|RED|GRN|YEL|BLU|MAG|CYN|WHT]'
+      echo   '# '
+      printf '#    '
+      for COLOR in BLK RED GRN YEL BLU MAG CYN WHT ; do
+        printf '[ %s ] ' `sample FG "$COLOR"`
+      done
+      echo
+      printf '#    '
+      for COLOR in BLK RED GRN YEL BLU MAG CYN WHT ; do
+        printf '[ %s ] ' `sample BG "$COLOR"`
+      done
+      echo
+      echo   '# '
+    }
+
+    palette_8b_test() {
+      local iter
+      local palette
+      echo   '#### 8-bit Palette'
+      echo   '# '
+      echo   '# usage: [ansi] swatch COLORNAME'
+      echo   '# usage: [ansi] palette'
+      echo   '# usage: [ansi] RGB [fg|bg] [c]'
+      printf '# '
+      iter=0
+      palette=`ansi::palette`
+      for c in $palette ; do
+        [ $(( $iter % 32 )) -eq 0 ] && printf '\n#    '
+        sample RGB $c
+        iter=$(( $iter + 1 ))
+      done
+      echo
+      echo
+    }
+
+    palette_24b_test() {
+      echo   '# usage: [ansi] RGB [fg|bg] [r] [g] [b]'
+      echo   '# '
+
+    }
+    
+    echo   '#### Testcases:'
+    echo
+
+    namespace_test
+    echo   '# '
+
+    palette_3b_test
+    echo   '# '
+
+    palette_8b_test
+    echo   '# '
+
+    palette_24b_test
+    echo   '# '
+
+  } >&2 
+
+fi
+
+
+##### dump functions and usage info
+if false; then
+  grep -oE "^[^ ].*[^{]*[(][)]" cli/ansi.subr
+  grep -oE "usage:[^'\"]*" cli/ansi.subr
+fi
+
+
+# vi:syntax=sh
