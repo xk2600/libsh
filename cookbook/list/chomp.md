@@ -11,8 +11,10 @@ printf '\n %-6s %6s\n%7s %6s\n\n'   ${B%%[X]*}  ${B#[^X]*}       ${B%[^X]*} ${B#
 
 ###### results in
 
-> a      XbXcXd
-> aXbXcX      d
+```
+a      XbXcXd
+aXbXcX      d
+```
 
 ## Implementation
 

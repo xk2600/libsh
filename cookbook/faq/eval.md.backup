@@ -1,0 +1,258 @@
+# Eval
+
+This is a curated reference of information related to `eval` in posix compatible shells, mostly focused on Bash. 
+
+## Summary
+
+The penultimate question of 'Why and when should `eval` use be avoided in shell scripts?' is broke down into the following questions of which a large swath of answers have accumulated in the nethers of the interwebs.
+
+> Why is using `eval` a bad idea?
+
+ 1. When the arguments to eval are properly quoted (two levels) and the 
+    values of variables expanded by eval in first parsing would not become 
+    executed commands in the second parsing. [1](#reference)
+
+> When would it be appropriate to use?
+
+ 1. It is not IMO (and this question will call for opinions) if you really
+    know what you are doing.
+   
+    First: check that (the eval of) what you wrote is what you expect by
+    replacing eval by echo and Second: think hard of which variables are
+    locally set and what values they may have. [1](#reference)
+
+
+
+> Are there any guidelines by which it can be used with complete and total
+  safety, or is it always and inevitably a security hole?
+
+ 1. There are some conditions in which it could be used in complete and 
+    total safety, **yes**. But it is always a risk (like it is a risk to
+    write an incorrect script). It just happens that eval raises the risk
+    to some exponent. This sure will need a long description. See original
+
+
+## Detail
+
+The command `eval` (always a builtin) allows parsing a command-line twice.
+
+It is not *more* or *less* dangerous than any other command (ex: `rm -rf /`) in principle. It will be executed with the present user permissions, so think twice before using it while being root. But that is also true of the `rm` command shown above. For a limited user `rm` will fail on most directories owned by root. But `rm` is still a ***dangerous*** command.
+
+### A known idiom
+
+The command `eval` is very useful (and perfectly safe) in known idioms.
+For example, this expression prints the value of the last positional parameter:
+
+```sh
+$ set -- "ls -l" "*" "c;date"
+
+$ eval echo \"\$\{$#\}\"          ### command under test
+
+c;date
+```
+
+The command is un-conditionally safe (as it is) because the only possible result from `$#` is a number. And the only possible result of `$n` (with `n` being a number) is the contents of such positional variable.
+
+If you want to see what the command does, replace `eval` by `echo`
+
+```sh
+$ set -- "ls -l" "*" "c; date"
+$ echo echo \"\$\{$#\}\"          ### command under test
+echo "${3}"
+```
+
+And `echo ${3}` is very common (and safe) idiom.
+
+We can still change some of the quoting and get the same result:
+
+```sh
+$ echo echo '"${'$#\}\"
+echo "${3}"
+$ eval echo '"${'$#\}\"
+c;date
+```
+
+I hope that it is easy for you to see that this new way of quoting is somewhat more obscure that the one above.
+
+### A slightly different idiom
+
+```sh
+$ b=book
+$ book="A Tale of Two Cities"
+$ eval 'a=$'"$b"               ### safe for some values of $b.
+$ echo "$a"
+A Tale of Two Cities
+```
+
+And here we find the first (of two) and main problem with `eval`:
+insufficient quoting:
+
+```sh
+$ b='book;date'
+
+$ eval 'a=$'"$b"               ### safe for some values of $b.
+Fri Apr 22 22:03:09 UTC 2016
+```
+
+The command date got executed (which we didn't intend to).
+
+But this will not execute date (or so I thought thanks @Wildcard).
+A correct solution to this command is to sanitize the input, but I will delay talking about this until the second problem of `eval` has been defined.
+
+```sh
+$ eval 'a="$'"$b"\"
+$ echo "$a"
+A Tale of Two Cities;date
+```
+
+And the trick is not difficult, just replace `eval` by `echo` and evaluate if the printed command-line is safe. Compare the insecure and secure command:
+
+```sh
+$ echo 'a=$'"$b"
+a=$book;date
+$ echo 'a="$'"$b"\"
+a="$book;date"
+```
+
+Those simple double quotes will keep the string as an string and will not be converted to a command to execute by the shell.
+
+It may be easier to understand the logic of quoting is we place "external quotes" and "internal quotes" (spaces added for legibility):
+
+```
+$ echo a\=\"\$    "$b"   \"
+          ||      |  |   ||
+          |'------|--|---|+-{ internal quotes }
+          '-------|--|---+--{ escape to quotes from being stripped in
+                  |  |        1st round of command parsing. }
+                  '--+------{ external quotes stripped in 1st round of
+                              command parsing }
+```
+
+The internal quotes are the ones around $b which are always a "good idea".
+The external ones are all those in backslash (in this example).
+The command without spaces (as should be used):
+
+```sh
+$ echo a\=\"\$"$b"\"
+a="$book;date"
+
+$ eval a\=\"\$"$b"\"
+$ echo "$a"
+A Tale of Two Cities;date
+```
+
+But even this example was very quickly broken by a user (Thanks @Wildcard):
+
+```sh
+$ b='";date;:"'
+$ eval a\=\"\$"$b"\"
+Fri Apr 22 23:25:43 UTC 2016
+```
+
+The command executed by eval was thwarted to become malicious, lets use echo:
+
+```sh
+$ echo a\=\"\$"$b"\"
+a="$";date;:""
+```
+
+Thinking of what is the result of quoting twice is never simple.
+
+### Second Problem
+
+And this is even more convoluted than the first. In some cases we do not want the result of the first expansion of parameters of eval to remain quoted. In many cases because we want to execute a command inside a variable.
+
+Or, an attacker (as already shown above), crafts an string that match the qutoes and then places a command outside the quotes. The command will get executed and (if we are lucky) a bug will be reported.
+
+That breaks the first layer of protection: quoting
+And leaves the values of variables completely open to execution.
+
+In this case, it is imperative that we are sure of the values that a variable will have. All of the possible values.
+
+If a variable value is controlled by some user, we are telling that user:
+
+> Give me any command, I will execute it with my permissions.
+
+That is always a dangerous bet, a sure bug, and as root: a crazy action.
+
+### Sanitizing External Data
+
+Having said all the above, this is perfectly safe:
+
+```sh
+#!/bin/bash
+
+a=${1//[^0-9]}       ### Only leave a number (one or many digits).
+
+eval echo $(( a + 1 ))
+```
+
+No matter what an external user place in positional parameter, it will become a number, it may be a big number for which `$(( ... ))` will fail, but that input will not trigger the execution of any command.
+
+It is now that we can talk about sanitizing variable b from the command above. The command was:
+
+```sh
+$ b='";date;:"'
+$ eval a\=\"\$"$b"\"
+Sat Apr 23 01:56:30 UTC 2016
+```
+
+Because `b` contained several characters that were used to change the line.
+
+```sh
+$ echo a\=\"\$"$b"\"
+a="$";date;:""
+```
+
+Changing to single quotes will not work, some other value of b could match them also. We need to "sanitize" `b` by removing (at least) the quotes.
+We could replace `$b` by `${b//\"}`:
+
+```sh
+$ eval a\=\"\$"${b//\"}"\"
+$ echo "$a"
+$;date;:
+```
+
+### A more robust variable name sanitizing
+
+But we can make it even better by acknowledging that a variable name in shell could only have `[0-9a-zA_Z]` and `[_]`(underscores). We can remove all others with this:
+
+```sh
+$ c="$( LC_COLLATE=C; echo "${b//[^0-9A-Za-z_]}" )"
+```
+
+This will clean the variable `b` to a valid variable name.
+And then, we can add an even more strict check by actually checking that the variable name inside `$b` (using the cleaned `c`) exists:
+
+```sh
+$ if declare -p "$c" &>/dev/null; then   eval a\=\"\$"$c"\" ; fi
+```
+
+
+
+### Reference
+
+ 1. Why and when should `eval` use be avoided in shell scripts? -- 
+    [ [stackexchange](https://unix.stackexchange.com/a/278456) ]
+
+ 2. What the `eval` command *is* and how to use it -- 
+    [ [stackexchange](https://unix.stackexchange.com/q/23111/135943) ]
+    
+ 3. `eval` command and security issues -- 
+    [ [BashFAQ](http://mywiki.wooledge.org/BashFAQ/048) ]
+    
+ 4. Why should `eval` be avoided in Bash, and what should I use instead? --
+    [ [stackoverflow](https://stackoverflow.com/questions/17529220/why-should-eval-be-avoided-in-bash-and-what-should-i-use-instead) ]
+    
+ 5. What is the `eval` command in `bash`? --
+    [ [stackexchange](https://unix.stackexchange.com/questions/23111/what-is-the-eval-command-in-bash) ]
+ 
+ 6. Unix/Linux `bash`: Critical security hole uncovered --
+    [ [zdnet](http://www.zdnet.com/article/unixlinux-bash-critical-security-hole-uncovered/) ]
+ 
+ 7. Writing Better Shell Scripts - Part 3 (see example with `eval`) --
+    [ [innovationsts](http://innovationsts.com/?p=2363) ]
+ 
+ 8. Shell Script Security (see example with `eval`) --
+    [ [dev apple](https://developer.apple.com/library/mac/documentation/OpenSource/Conceptual/ShellScripting/ShellScriptSecurity/ShellScriptSecurity.html) ]
+bb v       vv  
