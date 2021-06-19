@@ -1,0 +1,52 @@
+#!/bin/sh
+
+
+# fn syntax 
+# 
+#
+cli::meta::fn::syntax() {
+  local FNNAME=$1 ; shift
+  printf 'function def "%s" ambiguous args: %s' "${FNNAME}" `ARGS "$@"`
+}
+debug func $LINENO function 'fn::syntax() defined.'
+
+
+
+cli::meta::fn::args() {
+  local ARGS
+  while [ $# -gt 0 ] ; do
+    # if last positional is a possibility $@: '*}' '{'
+    if [ $# -eq 2 ] ; then
+      [ ! "$2" \> '{'] && set -- "$1"
+    fi
+    case $1 in
+      '{*') ARGS=${ARGS:-${ARGS}${1#?}} ;
+            ARGS=${ARGS:+${ARGS} $1} ; shift ;;
+      '*}') ARGS=${ARGS%?} ; shift ;;
+    esac
+  done
+  printf "%s\n" $ARGS
+}
+debug func $LINENO function 'fn::args() defined.'
+
+
+
+cli::meta::fn() {
+  local FNAME
+  local ARGS
+  local BODY
+
+  ARGS=`f::args "$@"`
+  # iterate over args and create 'local <ARGNAME>', setting it
+  # to the positional 
+  # :TODO:
+
+  while IFS="\n" read -r LINE ; do
+    eval `printf '%s=\"\${%s}%s\n\"' ${FNAME} ${ARGS} "${LINE}"`
+  done      
+
+}
+debug func $LINENO function 'fn() defined.'
+
+
+

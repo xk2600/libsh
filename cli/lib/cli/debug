@@ -1,0 +1,61 @@
+#!/bin/sh
+# vim:syntax=sh
+
+enable::debug() {
+    debug() {
+    local SCRIPT   ;# $0
+    local TYPE     ;# $1
+    local OBJNAME  ;# $2
+
+    local FORMAT
+    SCRIPT="$0"
+    TYPE="$1"
+    LINE="$2"
+    OBJNAME="$3"
+    shift 3
+
+    case $TYPE in
+          v|var|variable)    FORMAT='%s[%s]: %s="%s"\n' ;;
+          f|func|function)   FORMAT='%s[%s]: %s: %s\n'  ;;
+          *)       return 1 ;;
+    esac
+    printf "$FORMAT" "${SCRIPT}" "${LINE}" "${OBJNAME}" "$*"
+  }
+
+}
+
+disable::debug() {
+  debug() {
+    # NOOP
+  }
+}
+
+debug() {
+    # NOOP
+}
+
+enable::debug 
+
+
+
+
+
+# ## rc.subr debug implementation
+# #
+# # debug message
+# #	If debugging is enabled in rc.conf output message to stderr.
+# #	BEWARE that you don't call any subroutine that itself calls this
+# #	function.
+# #
+# debug()
+# {
+#        case ${rc_debug} in
+#        [Yy][Ee][Ss]|[Tt][Rr][Uu][Ee]|[Oo][Nn]|1)
+#        	if [ -x /usr/bin/logger ]; then
+#        		logger "$0: DEBUG: $*"
+#        	fi
+#        	echo 1>&2 "$0: DEBUG: $*"
+#        	;;
+#        esac
+# }
+
