@@ -1,0 +1,96 @@
+#!/usr/bin/printf %s: must be sourced from /bin/sh interpreter.\n
+# vim:syntax=sh
+
+# package require libsh::interp::debug
+. "${CLILIB:?}/lib/libsh/shell/debug"
+# package require libsh::interp::meta
+. "${CLILIB:?}/lib/libsh/shell/meta"
+
+# 
+# doc --
+#
+#       Provides function generation for inline documentation. The intent is to
+#       provide a more robust documentation system than help::*() which rely on
+#       `cat` and `grep` to pull comment lines.
+#
+# SUBCOMMANDS
+#
+#       doc usage 
+#             usage function generator template
+#      
+#       doc help
+#             help function generator template
+#      
+#       doc args
+#             args function args generator template
+#      
+#       doc command COMMAND DESCRIPTION HEREDOC
+#             creates a scope::command::doc 
+#
+#
+# ARGUMENTS
+#
+#       de
+#
+# <<\END
+#
+#   summary text describing the function
+#
+# ARGUMENTS
+#
+#   [ARGNAME [DESCRIPTION]]
+#   [ARGNAME [DESCRIPTION]]
+#
+#   the rest of these lines are reserved for
+#   manpage style help output.
+# 
+# END
+#
+# EXAMPLE: (could be in .syntax script or in actual script file)
+#
+# cli syntax command github "interact with github service" <<\END
+#
+#   Provides the ability to interact with the GitHub REST API
+#   service.
+#   
+# END
+#
+
+
+
+doc::usage() {
+}
+
+
+
+
+
+doc::help() {
+}
+
+
+
+
+info::args() {
+}
+
+
+
+doc::command() {
+  local COMMAND
+  local CMD_DESCR
+  local CMD_SUMMARY
+  local ARGLIST
+  local ARG
+
+  read_heredoc METAFN <<__METAFN_END
+    syntax_$FNNAME() {
+      
+    }
+__METAFN_END
+  eval '$MEAFN'
+  
+}
+debug func $LINENO function 'cli::doc::definition() defined.'
+
+

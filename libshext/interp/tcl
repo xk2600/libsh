@@ -1,0 +1,110 @@
+#!/bin/echo
+# vim:syntax=sh
+
+interp::tcl::source() {
+  while IFS="\r\n" read -r line do;
+    case $line in
+
+    # call appropriate command within chan <subcommand> 
+         fblocked|fconfigure|fcopy)  tcl::chan::${COMMAND##?} "$@" ;;
+                         fileevent)  tcl::chan::event         "$@" ;;
+         close|eof|flush|seek|tell)  tcl::chan::${COMMAND}    "$@" ;;
+
+    # REMOVED: limited subset
+    #         apply|encoding|trace) ;;
+    #                  binary|scan) ;;
+    #                   array|dict) ;;
+    #                  load|unload) ;;
+    #                       socket) ;;
+    #                     tailcall) ;;
+    #                          try) ;;
+
+
+
+    # REMOVED: eventloop required
+    #           after|vwait|update) ;;
+    #      coroutine|yield|yieldto) ;;
+
+    # indirect calls **POSSIBLY UNSAFE**
+             eval)           ;;
+          uplevel)           ;;
+            upvar)           ;;
+            subst)           ;;
+           source)           ;;
+
+    # indirect variable manipulation
+    # ???
+
+    # list manipulation
+           concat)           ;;
+          lappend)           ;;
+          lassign)           ;;
+           lindex)           ;;
+          linsert)           ;;
+             list)           ;;
+          llength)           ;;
+             lmap)           ;;
+           lrange)           ;;
+          lrepeat)           ;;
+         lreplace)           ;;
+         lreverse)           ;;
+          lsearch)           ;;
+             lset)           ;;
+            lsort)           ;;
+
+    # string manipulation
+           append)           ;;
+             join)           ;;
+           regexp)           ;;
+           regsub)           ;;
+            split)           ;;
+           string)           ;;
+
+    # extended ensembles
+             chan)           ;;
+            clock)           ;;
+             file)           ;;
+          package)           ;;
+
+    # logic and math
+             expr)           ;;
+             incr)           ;;
+
+    # tcl -> POSIX sh direct idiom:
+                break|continue|pwd)  ${COMMAND}               ;;
+                cd|exit|exec|unset)  ${COMMAND} "${1:?}"      ;;
+                            format)  printf     "$@"          ;;
+                               pid)  echo       "$$"          ;;
+               set|variable|global)  setvar     ${1:?} ${2:?} ;;
+                              time)  time       "$*"          ;;
+
+    # I/O
+             open)           ;;
+             gets)           ;;
+             puts)           ;;
+             read)           ;;
+
+    # control flow
+               if)           ;;
+            catch)           ;;
+             case)           ;;
+            error)           ;;
+              for)           ;;
+          foreach)           ;;
+             proc)           ;;
+           return)           ;;
+            throw)           ;;
+           switch)           ;;
+            while)           ;;
+
+    # core tcl commands
+             glob)           ;;
+             info)           ;;
+           interp)           ;;
+        namespace)           ;;
+           rename)           ;;
+          unknown)           ;;
+    esac
+  done
+}
+

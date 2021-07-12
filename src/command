@@ -1,75 +1,76 @@
-#!/bin/sh
+#!/usr/bin/printf %s: must be sourced from /bin/sh interpreter.\n
+# vim:syntax=sh
 
 # package require cli::debug
-. ${CLIROOT}/lib/cli/debug
+. "${CLILIB:?}/lib/cli/debug"
 
 ##
-## cli command context
+## command context
 ##       returns path of currently executing script relative to LIBROOT
 ##
-## cli command exists [CMDNAME]
+## command exists [CMDNAME]
 ##       checks for existance of a command
 ##
-## cli command expand
+## command expand
 ##       strips path separator from cli_command list
 ##
-## cli command import
+## command import
 ##       creates and tracks alias exposing subcommands in native form
 ##
-## cli command help [CMDNAME]
+## command help [CMDNAME]
 ##       provides contextual help for a cli_command
 ##
-## cli command list [CMDNAME]  
+## command list [CMDNAME]  
 ##       lists cli_commands from ${BINROOT}
 ##
-## cli command parse [[CMDNAME]..]
+## command parse [[CMDNAME]..]
 ##       takes cli_command string and returns path and executable with args relative
 ##       to LIBROOT. Sets CLIARGS
 ##
-## cli command path
+## command path
 ##       returns path of 
 ##
-## cli command register [all|CNAME] 
+## command register [all|CNAME] 
 ##       registers contextual help and enables cli_command in shell
 ##
-## cli command syntax [SUBCLI] [
+## command syntax [SUBCLI] [
 ##       syntax definition
 ##
 ##
 ## ARGUMENTS
 ##                 
-##       all         all cli commands
-##       CNAME       the cli command we're looking up the syntax tree for
+##       all         all commands
+##       CNAME       the command we're looking up the syntax tree for
 ##       CMDPATH     relative path and executable script relative to $LIBROOT
 ##       CMDARGS     trailing args after in command string
 ##
 ## EXAMPLES
 ##
-##       $ cli command list                  ;# -> empty response...
+##       $ command list                  ;# -> empty response...
 ##       
-##       $ cli command register junk         l# -> error response...
-##       failed: junk does not exists in CLIROOT
+##       $ command register junk         l# -> error response...
+##       failed: junk does not exists in CLILIB
 ##
-##       $ cli command register github       ;# -> returns found commands which were
+##       $ command register github       ;# -> returns found commands which were
 ##       github/repo/create              ;# -> registered during invocation
 ##
-##       $ cli command list                  ;# -> returns list of commands known by
+##       $ command list                  ;# -> returns list of commands known by
 ##       github/repo/create              ;#    CLILIB
 ##
-##       $ cli command expand `command list` ;# -> creates a github repo with 
+##       $ command expand `command list` ;# -> creates a github repo with 
 ##       github repo create              l#    cli_command registered
 ##
-##       $ cli command help github repo
+##       $ command help github repo
 ##       cli_command help 
 ##
-##       $ cli command parse github repo create testrepo arg2 arg3 arg4
+##       $ command parse github repo create testrepo arg2 arg3 arg4
 ##       github/repo/create testrepo arg2 arg3 arg4
 ##
-##       $ cli command syntax 'github repo create' 'lists commands from ${BINROOT}' '
+##       $ command syntax 'github repo create' 'lists commands from ${BINROOT}' '
 ##
 ##
 
-cli::command::context() {
+command::context() {
   local SCRIPTPATH
   if [ $# -gt 0 ]; then
     # WITH ARGS: SET CONTEXT
@@ -84,16 +85,16 @@ cli::command::context() {
 
 
 
-debug func $LINENO function 'cli::command::context() created.'
-cli::command::parse_all() {
+debug func $LINENO function 'command::context() created.'
+command::parse_all() {
 
 }
 
 
 
 
-debug func $LINENO function 'cli::command::parse_all() created.'
-cli::command::parse() {
+debug func $LINENO function 'command::parse_all() created.'
+command::parse() {
   local ATOM
   [ ! $# -gt 0 ] && { echo 'cli_command parse: called without arguments.' ; exit ; }
   CLIPATH="${LIBROOT}"
@@ -109,41 +110,41 @@ cli::command::parse() {
   done
   printf "${CMDPATH} ${ARGS}\n"
 }
-debug func $LINENO function 'cli::command::parse() created.'
+debug func $LINENO function 'command::parse() created.'
 
 
 
 
-cli::command::list() {
+command::list() {
   local ROOTLEN
   local CLIPATH
-  CLISTRING=`cli::command::parse "$@"`
-  CLIPATH=`cli::command::parse "$@"`
-  ROOTLEN="${CLIROOT}/lib.."
+  CLISTRING=`command::parse "$@"`
+  CLIPATH=`command::parse "$@"`
+  ROOTLEN="${CLILIB}/lib.."
   ROOTLEN="${#ROOTLEN}"
-  CMDLIST=`find "${CLIROOT}/lib/${CLIPATH}" -type f -regex '[^.]*$' | cut -b ${ROOTLEN}-`
+  CMDLIST=`find "${CLILIB}/lib/${CLIPATH}" -type f -regex '[^.]*$' | cut -b ${ROOTLEN}-`
   # iterate over commands in CMDLIST and append the 'cli info args'
 }
-debug func $LINENO function 'cli::command::list() created.'
+debug func $LINENO function 'command::list() created.'
 
 
 
 
-cli::command::expand() {
+command::expand() {
   for c in $1; do
     echo $c | sed -r 's/\// /g' 
   done
 }
-debug func $LINENO function 'cli::command::expand() created.'
+debug func $LINENO function 'command::expand() created.'
 
 
 
 
-cli::command::exists() {
+command::exists() {
   local COMMAND
   COMMAND=${1:?} ; shift
   if [ $# -gt 0 ]; 
-    echo "usage: cli command exists CMDNAME" >&2
+    echo "usage: command exists CMDNAME" >&2
     return 1
   fi
   if [ "`command -p -v command`" == "$COMMAND" ]; then
@@ -156,15 +157,15 @@ cli::command::exists() {
 
 
 
-cli::command::path() {
+command::path() {
   echo $* | sed 's/ /\//g'
 }
-debug func $LINENO function 'cli::command::path() created.'
+debug func $LINENO function 'command::path() created.'
 
 
 
 
-cli::command::syntax() {
+command::syntax() {
   local METAFN
   # META: CREATE FUNCTION THAT CREATES:
                                                                   
@@ -176,39 +177,39 @@ cli::command::syntax() {
      }
                                                                   fi
   #
-  # usage: cli::command::syntax $command $subcommand $description
+  # usage: command::syntax $command $subcommand $description
   eval `printf 'syntax_%s() { print "%%16s %%s" $1 $2 ; }' $1` ; 
 }
-debug func $LINENO function 'cli::command::syntax() created.'
+debug func $LINENO function 'command::syntax() created.'
 
 
 
 
-cli::command::usage() {
+command::usage() {
   # META: CREATE FUNCTION THAT CREATES CANNED HEREDOC
-  # usage: cli::command::usage $command $subcommand $heredoc
+  # usage: command::usage $command $subcommand $heredoc
   local CLI
   local SUBCLI
   local HEREDOC
   eval `printf "usage_%s() { \ncat <<  }"`
 }
-debug func $LINENO function 'cli::command::usage() created.'
+debug func $LINENO function 'command::usage() created.'
 
 
 
 
-cli::command::help_all() {
+command::help_all() {
 }
-debug func $LINENO function 'cli::command::help_all() created.'
+debug func $LINENO function 'command::help_all() created.'
 
 
 
 
-cli::command::help() {
+command::help() {
   local TOKEN
   local CMDPATH
   if [ $# -eq 0 ]; then
-    cli::command::help_all
+    command::help_all
     return 0
   fi
   CMDLINE="$*"
@@ -230,52 +231,52 @@ cli::command::help() {
     
   done
 }
-debug func $LINENO function 'cli::command::help() created.'
+debug func $LINENO function 'command::help() created.'
 
 
 
 
-cli::command::register_all() {
+command::register_all() {
   local CREG
-  for CREG in `cli::command::list`; do
+  for CREG in `command::list`; do
     cli_command register $CREG
   done
 }
-debug func $LINENO function 'cli::command::register_all() created.'
+debug func $LINENO function 'command::register_all() created.'
 
 
 
 
-cli::command::register() {
+command::register() {
   local COMMAND=$1 ; # COMMAND TO REGISTER
   export CMD_REGISTERED
   case ${COMMAND} in
-    all)      cli::command::register_all ;;
+    all)      command::register_all ;;
     *) 
     alias name=${COMMAND} ${BINROOT}/${COMMAND} ;
               [ -z ${CMD_REGISTERED} ] CMD_REGISTERED=${CMD_REGISTERED}:${COMMAND} ;;
   esac
 }
-debug func $LINENO function 'cli::command::register() created.'
+debug func $LINENO function 'command::register() created.'
 
 
 
 
-cli::command() {
+command() {
   local SUBCLI=$1
   case ${SUBCLI} in
     # CLIS
-    list)     cli::command::list     "$@";;
-    expand)   cli::command::expand   "$@";;
-    exists)   cli::command::exists   "$@";;
-    register) cli::command::register "$@";;
+    list)     command::list     "$@";;
+    expand)   command::expand   "$@";;
+    exists)   command::exists   "$@";;
+    register) command::register "$@";;
     
     # DEFAULT 
     *)
       builtin cli_command ${SUBCLI};;
   esac
 }
-debug func $LINENO function 'cli::command() created.'
+debug func $LINENO function 'command() created.'
 
 
 
