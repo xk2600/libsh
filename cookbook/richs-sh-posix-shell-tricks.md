@@ -44,19 +44,19 @@ If you’re really attached to the name “echo” and want to use it in your sc
 
 ```sh
 echo () (
-fmt=%s end=\\n IFS=" "
-
-while [ $# -gt 1 ] ; do
-case "$1" in
-[!-]*|-*[!ne]*) break ;;
-*ne*|*en*) fmt=%b end= ;;
-*n*) end= ;;
-*e*) fmt=%b ;;
-esac
-shift
-done
-
-printf "$fmt$end" "$*"
+    fmt=%s end=\\n IFS=" "
+    
+    while [ $# -gt 1 ] ; do
+        case "$1" in
+            [!-]*|-*[!ne]*) break ;;
+            *ne*|*en*) fmt=%b end= ;;
+            *n*) end= ;;
+            *e*) fmt=%b ;;
+        esac
+    shift
+    done
+    
+    printf "$fmt$end" "$*"
 )
 ```
 
@@ -93,7 +93,7 @@ EOF
 ## Reading input byte-by-byte
 
 ```sh
-read dummy oct &lt;&lt; EOF
+read dummy oct << EOF
 $(dd bs=1 count=1|od -b)
 EOF
 ```
@@ -140,7 +140,7 @@ The sed command here is mandatory. Contrary to popular belief (well, it was popu
 Of course the much smarter way to use find to efficiently apply commands to files is with -exec and a “+” replacing the “;”:
 
 ```sh
-find *path* -exec *command* '{}' +
+find *path* -exec command '{}' +
 ```
 
 This causes find to place as many filenames as will fit on the command line in place of the “{}”, each as its own argument. There is no issue with embedded newlines being misinterpreted. Sadly, despite its presence in POSIX for a long time, the popular GNU implementation of find did not support “+” for the longest time, and so its use is rather unportable in practice. A reasonable workaround would be to write a test for support of “+”, and use “;” in place of “+” (with the naturally severe loss in efficiency) on broken systems where find is nonconformant. 
@@ -207,8 +207,8 @@ Try this:
 
 ```sh
 func () {
-# ...body here...
-eval "$1=\${foo}"
+    # ...body here... #
+    eval "$1=\${foo}"
 }
 ```
 
@@ -264,8 +264,8 @@ What’s not clear is how to save the current contents of “$@” so you can ge
 
 ```sh
 save () {
-for i do printf %s\\n "$i" | sed "s/'/'\\\\''/g;1s/^/'/;\$s/\$/' \\\\/" ; done
-echo " "
+    for i do printf %s\\n "$i" | sed "s/'/'\\\\''/g;1s/^/'/;\$s/\$/' \\\\/" ; done
+    echo " "
 }
 ```
 
@@ -283,9 +283,9 @@ One could also generate an ‘array’ variable from the output of the find comm
 
 ```sh
 findarray () {
-find "$@" -exec sh -c "for i do printf %s\\\\n \"\$i\" \\
-| sed \"s/'/'\\\\\\\\''/g;1s/^/'/;\\\$s/\\\$/' \\\\\\\\/\"
-done" dummy '{}' +
+    find "$@" -exec sh -c "for i do printf %s\\\\n \"\$i\" \\
+    | sed \"s/'/'\\\\\\\\''/g;1s/^/'/;\\\$s/\\\$/' \\\\\\\\/\"
+    done" dummy '{}' +
 }
 ```
 
@@ -370,10 +370,10 @@ As such, it’s sometimes safe to replace individual categories such as LC_COLLA
 
 ```sh
 unexport_all () {
-eval set -- `export -p`
-for i do case "$i" in
-*=*) unset ${i%%=*} ; eval "${i%%=*}=\${i#*=}" ;;
-esac ; done
+    eval set -- `export -p`
+    for i do case "$i" in
+        *=*) unset ${i%%=*} ; eval "${i%%=*}=\${i#*=}" ;;
+    esac ; done
 }
 ```
 
@@ -391,11 +391,12 @@ Keep in mind that if a glob does not match any filenames, it will remain as a si
 
 ```sh
 is_empty () (
-cd "$1"
-set -- .[!.]* ; test -f "$1" && return 1
-set -- ..?* ; test -f "$1" && return 1
-set -- * ; test -f "$1" && return 1
-return 0 )
+    cd "$1"
+    set -- .[!.]* ; test -f "$1" && return 1
+    set -- ..?* ; test -f "$1" && return 1
+    set -- * ; test -f "$1" && return 1
+    return 0 
+)
 ```
 
 This code uses the magic 3 globs which are needed to match all possible names except “.” and “..”, and also handles the cases where the glob matches a literal name identical to the glob string.
