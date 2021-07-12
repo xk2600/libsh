@@ -1,3 +1,13 @@
 #!/bin/printf 
 # vim:syntax=sh
+
 #
+# string
+#
+#       provides string manipulation functions
+#
+# string left STRING
+#       returns the left 
+# 
+# string right STRING
+#       returns the right of the filter
