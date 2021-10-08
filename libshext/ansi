@@ -638,6 +638,79 @@ if [ `basename $0` == 'ansi.subr' ]; then
 fi
 
 
+
+
+###############################################################################
+##### ::sgr ###################################################################
+
+::sgr::import() {
+  local EXPORTS SYM
+  EXPORTS=`::sgr::exports "$@"`
+  for $SYM in $EXPORTS; do
+    setvar $SYM `::sgr "$SYM"`
+  done
+}
+
+::sgr::exports() {
+  local EXPORTS="K R G Y B M W ESC RST SGR BOLD"
+  local SYMS SYM
+  while [ $# != 0 ]; do
+    for SYM in $EXPORTs; do
+      if [ $SYM -eq $1 ]; then
+        SYMS="${SYMS}${SYMS:+ }${SYM}"
+      else
+        echo "::sgr::symbol: unknown symbol \"$1\"" >&2 
+        return 1 
+      fi
+    done
+  done
+  echo $SYMS
+  return 0
+}
+
+::sgr() {
+
+  local ARG ATTRS BASE COLOR SYMBOL EXPORTABLE
+
+  while [ $# != 0 ]; do
+    # append ; if this isn't the first line
+    ATTRS=${ATTRS:-[}${ATTRS:+;}
+    BASE=0  
+    ARG="$1"
+    case "$ATTR" in
+                        import)  ::sgr::import "$@" ; return 0       ;;  # import symbols
+
+                            !*)  BASE=20 ; ARG=${ATTR#!}             ;&  # negate
+
+           RST|rst|RESET|reset)  ATTRS=${ATTRS}$(( $BASE+0 )); shift ;;  # reset
+       STRONG|strong|BOLD|bold)  ATTRS=${ATTRS}$(( $BASE+1 )); shift ;;  # bold
+                   FAINT|faint)  ATTRS=${ATTRS}$(( $BASE+2 )); shift ;;  # faint
+   [Ii]|ITALIC|italic|[Ee][Mm])  ATTRS=${ATTRS}$(( $BASE+3 )); shift ;;  # italic
+             UL|ul|UNDER|under)  ATTRS=${ATTRS}$(( $BASE+4 )); shift ;;  # underline
+      
+                     BG=*|bg=*)  BASE=40                             ;&  # background
+                     FG=*|fg=*)  BASE=30                             ;&  # foreground
+                             *)  case "${ATTR#*=}" in
+
+                                 [Kk])  ATTRS=${ATTRS}${BASE}        ;;  # black
+                                 [Rr])  ATTRS=${ATTRS}$(( $BASE+1 )) ;;  # red
+                                 [Gg])  ATTRS=${ATTRS}$(( $BASE+2 )) ;;  # green
+                                 [Yy])  ATTRS=${ATTRS}$(( $BASE+3 )) ;;  # yellow
+                                 [Bb])  ATTRS=${ATTRS}$(( $BASE+4 )) ;;  # blue
+                                 [Mm])  ATTRS=${ATTRS}$(( $BASE+5 )) ;;  # magenta
+                                 [Cc])  ATTRS=${ATTRS}$(( $BASE+6 )) ;;  # cyan
+                                 [Ww])  ATTRS=${ATTRS}$(( $BASE+7 )) ;;  # white
+
+                                 esac 
+                                 shift ; continue ;;
+    esac
+  done
+}
+
+
+
+
+
 ##### dump functions and usage info
 if false; then
   grep -oE "^[^ ].*[^{]*[(][)]" cli/ansi.subr

@@ -1,7 +1,8 @@
 #!/usr/bin/printf %s: must be sourced from /bin/sh interpreter.\n
 # vim:syntax=sh
 
-. ../extended-keywords.subr
+# package require cli::debug
+. "${CLILIB:?}/lib/cli/debug"
 
 ## require    NAMESPACE
 ##       sources file scope making it available in the interpreter
@@ -14,7 +15,7 @@ package::require() {
   set -e
   while [ $# -gt 0 ]; do
     MODULE="$1"
-    if [ -f "${CLIROOT}/lib/`echo $MODULE | sed -r 's/::/\//g'`" ]; then
+    if [ -f "${CLILIB}/lib/`echo $MODULE | sed -r 's/::/\//g'`" ]; then
       REQUIREMENTS="$REQUIREMENTS $1"
     else
       error "require: could not find lib %s" "$1"
@@ -23,6 +24,10 @@ package::require() {
   done
   set +e
 }
+debug func $LINENO function 'cli::command::context() created.'
+
+
+
 
 package() {
   SUBCOMMAND="${1:?}" ; shift
@@ -31,3 +36,8 @@ package() {
     *)       error 'unknown subcommand "%s" must be: require.' "$SUBCOMMAND" ;;
   esac
 }
+debug func $LINENO function 'cli::command::context() created.'
+
+
+
+

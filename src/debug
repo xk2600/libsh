@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/usr/bin/printf %s: must be sourced from /bin/sh interpreter.\n
 # vim:syntax=sh
+
 
 enable::debug() {
     debug() {

@@ -1,10 +1,13 @@
-#!/bin/sh
+#!/usr/bin/printf %s: must be sourced from /bin/sh interpreter.\n
+# vim:syntax=sh
 
+# package require cli::debug
+. "${CLILIB:?}/lib/cli/debug"
 
 # fn syntax 
 # 
 #
-cli::meta::fn::syntax() {
+meta::fn::syntax() {
   local FNNAME=$1 ; shift
   printf 'function def "%s" ambiguous args: %s' "${FNNAME}" `ARGS "$@"`
 }
@@ -12,7 +15,7 @@ debug func $LINENO function 'fn::syntax() defined.'
 
 
 
-cli::meta::fn::args() {
+meta::fn::args() {
   local ARGS
   while [ $# -gt 0 ] ; do
     # if last positional is a possibility $@: '*}' '{'
@@ -31,7 +34,7 @@ debug func $LINENO function 'fn::args() defined.'
 
 
 
-cli::meta::fn() {
+meta::fn() {
   local FNAME
   local ARGS
   local BODY
